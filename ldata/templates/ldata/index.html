@@ -1,3 +1,4 @@
+{% load jsonify %}
 <!doctype html>
 <html lang="en">
 
@@ -39,54 +40,10 @@
                             <h1>Локо аналитика</h1>
                         </div>
 
-                        <div>
-                            <label>выбирай</label>
-                            <input type="hidden"  id="mySelect" value="" style="width:300px;" >
-                            <!-- <select id="mySelect" class="form-control select2" tabindex="-1" aria-hidden="true">
-                            </select> -->
-                            <!-- <select class="form-control select2 select2-hidden-accessible" multiple="" data-placeholder="Select a State"
-                                style="width: 100%;" tabindex="-1" aria-hidden="true">
-                                <option>Alabama</option>
-                                <option>Alaska</option>
-                                <option>California</option>
-                                <option>Delaware</option>
-                                <option>Tennessee</option>
-                                <option>Texas</option>
-                                <option>Washington</option>
-                            </select> -->
-                        </div>
-                        <!-- <div class="form-group">
-    
-                        </div> -->
-
-                        <!-- {% for branch in branches %}
                         <div class="form-group">
-                            <label>Филиал:</label>
-                            <select name="branch" class="form-control">
-                                {% for branch in branches %}
-                                <option>{{branch.name}}</option>
-                                {% endfor %}
-                            </select>
+                            <label for="lquery">Филиалы и серии:</label>
+                            <input id="lquery" value="" style="width:300px;" name="lquery">
                         </div>
-                        {% endfor %} -->
-
-
-                        <!-- <div class="form-group">
-                            <label>Филиал:</label>
-                            <select name="branch" class="form-control">
-                                {% for branch in branches %}
-                                <option>{{branch.name}}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="Train">Серия:</label>
-                            <select name="train" class="form-control" id="train">
-                                {% for train in trains %}
-                                <option>{{train.name}}</option>
-                                {% endfor %}
-                            </select>
-                        </div> -->
                         <div class="form-group">
                             <label for="kmFrom">Начало:</label>
                             <select name="kmfrom" class="form-control" id="kmfrom">
@@ -158,39 +115,50 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
         crossorigin="anonymous"></script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/3.5.2/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/3.5.2/select2.js"></script>
     <!-- <script>
         $('.select2').select2()
     </script> -->
     <script>
+        Array.prototype.diff = function (a) {
+            return this.filter(function (i) { return a.indexOf(i) < 0; });
+        };
 
-        var FRUIT_GROUPS = [
-            {
-                id: '',
-                text: 'Citrus',
-                children: [
-                    { id: 'c1', text: 'Grapefruit' },
-                    { id: 'c2', text: 'Orange' },
-                    { id: 'c3', text: 'Lemon' },
-                    { id: 'c4', text: 'Lime' }
-                ]
-            },
-            {
-                id: '',
-                text: 'Other',
-                children: [
-                    { id: 'o1', text: 'Apple' },
-                    { id: 'o2', text: 'Mango' },
-                    { id: 'o3', text: 'Banana' }
-                ]
-            }
-        ];
-
-        $('#mySelect').select2({
+        var ldata = {{ loko_data| jsonify }};
+        // console.log(FRUIT_GROUPS)
+        // console.log(JSON.stringify(FRUIT_GROUPS))
+        // var ffs = [
+        //     {
+        //         id: '',
+        //         text: 'Citrus',
+        //         children: [
+        //             { id: 'c1', text: 'Grapefruit' },
+        //             { id: 'c2', text: 'Orange' },
+        //             { id: 'c3', text: 'Lemon' },
+        //             { id: 'c4', text: 'Lime' }
+        //         ]
+        //     },
+        //     {
+        //         id: '',
+        //         text: 'Other',
+        //         children: [
+        //             { id: 'o1', text: 'Apple' },
+        //             { id: 'o2', text: 'Mango' },
+        //             { id: 'o3', text: 'Banana' }
+        //         ]
+        //     }
+        // ];
+        // console.log(JSON.stringify(ffs))
+        // console.log(ffs)
+        // var FRUIT_GROUPS = ffs;
+        // selected ids -->
+        $('#lquery').select2({
             multiple: true,
-            placeholder: "Select fruits...",
-            data: FRUIT_GROUPS,
+            placeholder: "Выберите..",
+            data: ldata,
             query: function (options) {
+                // debugger;
+                // options.element.select2('data') = 'aaa'
                 var selectedIds = options.element.select2('val');
                 var selectableGroups = $.map(this.data, function (group) {
                     var areChildrenAllSelected = true;
@@ -200,81 +168,34 @@
                             return false; // Short-circuit $.each()
                         }
                     });
+                    if (areChildrenAllSelected) {
+                        selectedIds = selectedIds.diff(group.children.map(function (item) { return item.id }))
+                        selectedIds.push(group.id)
+                        // $("#lquery").val("2").trigger("change");  
+                        debugger;
+                    }
                     return !areChildrenAllSelected ? group : null;
                 });
+                // options.callback({ data: ['xdd'] });
+                // debugger;
+                // options.callback({ results: [{id:1, text:'Red'},{id:2, text:'Blue'}] });
                 options.callback({ results: selectableGroups });
             }
         }).on('select2-selecting', function (e) {
+            // debugger;
             var $select = $(this);
+            if ('name' in e.choice) { e.choice.text = e.choice.name; }
             if (e.val == '') {
                 e.preventDefault();
                 $select.select2('data', $select.select2('data').concat(e.choice.children));
                 $select.select2('close');
             }
         });
+        // }).on('change', function (e) {debugger;});
+        // $('#ldata').val(['1', '2']);
+        // $('#ldata').trigger('change'); // Notify any JS components that the value changed
 
-        // $('#showValue').click(function () {
-        //     $('#output').text($('#fruitSelect').val());
-        // });
-
-        // $("#mySelect").select2({
-        //     data: [
-        //         {
-        //             id: 0,
-        //             text: 'enhancement',
-        //             children: [{
-        //                 id: 22,
-        //                 text: 'bug2'
-        //             }]
-        //         },
-        //         {
-        //             id: 1,
-        //             text: 'bug'
-        //         },
-        //         {
-        //             id: 2,
-        //             text: 'duplicate'
-        //         },
-        //         {
-        //             id: 3,
-        //             text: 'invalid'
-        //         },
-        //         {
-        //             id: 4,
-        //             text: 'wontfix'
-        //         }
-        //     ],
-        //     placeholder: "Фильтр",
-        //     multiple: true,
-
-        // });
     </script>
-    <style>
-        /* #main { */
-        /* width: 40%; */
-        /* border: 1px solid gray; */
-        /* border-radius: 10px; */
-        /* margin: 10px 0 0 10px; */
-        /* padding: 10px; */
-        /* float: left; */
-        }
-
-        /* #submitbtn input {
-            margin: 0 auto;
-            display: block;
-            background-color: red;
-        } */
-        /* 
-        #lchart {
-            position: relative;
-            display: block;
-            float: right;
-            width: 50%;
-            border: 1px solid gray;
-            border-radius: 10px;
-            margin: 10px 0 0 10px;
-        } */
-    </style>
 </body>
 
 
