@@ -152,49 +152,65 @@
         // console.log(ffs)
         // var FRUIT_GROUPS = ffs;
         // selected ids -->
+        var i = 1;
         $('#lquery').select2({
             multiple: true,
             placeholder: "Выберите..",
             data: ldata,
             query: function (options) {
-                // debugger;
-                // options.element.select2('data') = 'aaa'
+                i++;
+                var selectedItems = options.element.select2('data');
                 var selectedIds = options.element.select2('val');
                 var selectableGroups = $.map(this.data, function (group) {
                     var areChildrenAllSelected = true;
                     $.each(group.children, function (i, child) {
                         if (selectedIds.indexOf(child.id) < 0) {
                             areChildrenAllSelected = false;
-                            return false; // Short-circuit $.each()
+                            return false;
                         }
                     });
                     if (areChildrenAllSelected) {
+                        var childrens = group.children.map(function (item) { return item.id })
                         selectedIds = selectedIds.diff(group.children.map(function (item) { return item.id }))
                         selectedIds.push(group.id)
-                        // $("#lquery").val("2").trigger("change");  
-                        debugger;
+                        for (children of group.children) {
+                            children.text = children.text.split(':')[1]
+                            console.log('removing')
+                            var i = selectedItems.length;
+                            while (i--) {
+                                if (selectedItems[i].id == children.id) {
+                                    selectedItems.splice(i)
+                                }
+                            }
+                        }
+                        selectedItems.push(group)
                     }
                     return !areChildrenAllSelected ? group : null;
                 });
-                // options.callback({ data: ['xdd'] });
-                // debugger;
-                // options.callback({ results: [{id:1, text:'Red'},{id:2, text:'Blue'}] });
+                options.element.select2('data', selectedItems)
                 options.callback({ results: selectableGroups });
             }
+        }).on('change.select2', function (e) {
+            if ('removed' in e) {
+                if ('shadow' in e.removed) {
+                    e.removed.text = e.removed.shadow
+                }
+            }
         }).on('select2-selecting', function (e) {
-            // debugger;
             var $select = $(this);
-            if ('name' in e.choice) { e.choice.text = e.choice.name; }
+            if ('name' in e.choice) {
+                if (e.choice.text != e.choice.name) {
+                    e.choice.shadow = e.choice.text;
+                    e.choice.text = e.choice.name;
+                }
+                console.log('swap names')
+            }
             if (e.val == '') {
                 e.preventDefault();
                 $select.select2('data', $select.select2('data').concat(e.choice.children));
                 $select.select2('close');
             }
         });
-        // }).on('change', function (e) {debugger;});
-        // $('#ldata').val(['1', '2']);
-        // $('#ldata').trigger('change'); // Notify any JS components that the value changed
-
     </script>
 </body>
 
