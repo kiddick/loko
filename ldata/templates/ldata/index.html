@@ -152,13 +152,11 @@
         // console.log(ffs)
         // var FRUIT_GROUPS = ffs;
         // selected ids -->
-        var i = 1;
         $('#lquery').select2({
             multiple: true,
             placeholder: "Выберите..",
             data: ldata,
             query: function (options) {
-                i++;
                 var selectedItems = options.element.select2('data');
                 var selectedIds = options.element.select2('val');
                 var selectableGroups = $.map(this.data, function (group) {
@@ -174,8 +172,7 @@
                         selectedIds = selectedIds.diff(group.children.map(function (item) { return item.id }))
                         selectedIds.push(group.id)
                         for (children of group.children) {
-                            children.text = children.text.split(':')[1]
-                            console.log('removing')
+                            if ('shadow' in children) {children.text = children.shadow}
                             var i = selectedItems.length;
                             while (i--) {
                                 if (selectedItems[i].id == children.id) {
@@ -184,6 +181,18 @@
                             }
                         }
                         selectedItems.push(group)
+                    }
+                    if (selectedIds.includes(group.id.toString())) {
+                        selectedIds = selectedIds.diff(group.children.map(function (item) { return item.id }))
+                        for (children of group.children) {
+                            if ('shadow' in children) {children.text = children.shadow}
+                            var i = selectedItems.length;
+                            while (i--) {
+                                if (selectedItems[i].id == children.id) {
+                                    selectedItems.splice(i, 1)
+                                }
+                            }
+                        }
                     }
                     return !areChildrenAllSelected ? group : null;
                 });
@@ -203,7 +212,6 @@
                     e.choice.shadow = e.choice.text;
                     e.choice.text = e.choice.name;
                 }
-                console.log('swap names')
             }
             if (e.val == '') {
                 e.preventDefault();
