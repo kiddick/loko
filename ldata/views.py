@@ -21,33 +21,12 @@ def get_context():
                         'id': f'{branch.id}_{train.id}',
                         'text': train.name,
                         'name': f'{branch.name}:{train.name}'
-                    }  for train in branch.trains.all()
+                    } for train in branch.trains.all()
                 ]
                 # 'children': [{'id': '228', 'name': 'qool', 'text':'aaa'},{'id':'229','name': 'qooxl', 'text':'bbb'}]
             }
         )
     context['loko_data'] = data
-    # context['loko_data'] = [
-    #         {
-    #             'id': '',
-    #             'text': 'Citrus',
-    #             'children': [
-    #                 { 'id': 'c1', 'text': 'Grapefruit' },
-    #                 { 'id': 'c2', 'text': 'Orange' },
-    #                 { 'id': 'c3', 'text': 'Lemon' },
-    #                 { 'id': 'c4', 'text': 'Lime' }
-    #             ]
-    #         },
-    #         {
-    #             'id': '',
-    #             'text': 'Other',
-    #             'children': [
-    #                 { 'id': 'o1', 'text': 'Apple' },
-    #                 { 'id': 'o2', 'text': 'Mango' },
-    #                 { 'id': 'o3', 'text': 'Banana' }
-    #             ]
-    #         }
-    #     ]
     return context
 
 
@@ -58,10 +37,38 @@ def index(request):
 
 def calc(request):
     context = get_context()
-    context['branch'] = request.GET['branch']
-    context['train'] = request.GET['train']
-    context['kmfrom'] = request.GET['kmfrom']
-    context['kmto'] = request.GET['kmto']
+    query = request.GET['lquery']
+    year_from = request.GET['kmfrom']
+    year_to =  request.GET['kmto']
+    context['lquery'] = query
+    context['kmfrom'] = year_from
+    context['kmto'] = year_to
+    q = Mileage.objects.get_stats(query=query, year_from=year_from, year_to=year_to)
+    print('count:', q)
+    # print('q:', q.query)
+    # print('count:', q.count())
+    years = []
+    totals = []
+    for i in q.all():
+        years.append(i['year'])
+        totals.append(i['total'])
+    # {
+    #     labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+    #     datasets: [{
+    #         label: 'BaBLO$$',
+    #         data: [12, 19, 3, 5, 2, 3],
+    #         borderWidth: 1
+    #     }]
+    # }
+    chart = {
+        'labels': years,
+        'datasets': [{
+            'label': 'BaBLO$$',
+            'data': totals,
+            'borderWidth': 1
+        }]}
+    print(chart)
+    context['chart'] = chart
     return render(request, 'ldata/index.html', context=context)
 
 # На основе приложенных данных (test_LT.xlsx) сделать мини-сервис, предоставляющий возможность выводить график

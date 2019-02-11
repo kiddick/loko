@@ -72,8 +72,7 @@
                     <div class="box-header">
                         <h2>chart</h2>
                     </div>
-                    <p>Branch: {{branch}}</p>
-                    <p>Train: {{train}}</p>
+                    <p>query: {{lquery}}</p>
                     <p>from: {{kmfrom}}</p>
                     <p>to: {{kmto}}</p>
 
@@ -89,14 +88,7 @@
         var ctx = document.getElementById("myChart");
         var myChart = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-                datasets: [{
-                    label: 'BaBLO$$',
-                    data: [12, 19, 3, 5, 2, 3],
-                    borderWidth: 1
-                }]
-            },
+            data: {{ chart|jsonify }},
             options: {
                 scales: {
                     yAxes: [{
