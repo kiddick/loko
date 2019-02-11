@@ -60,15 +60,16 @@ def calc(request):
     #         borderWidth: 1
     #     }]
     # }
-    chart = {
-        'labels': years,
-        'datasets': [{
-            'label': 'BaBLO$$',
-            'data': totals,
-            'borderWidth': 1
-        }]}
-    print(chart)
-    context['chart'] = chart
+    # chart = {
+    #     'labels': years,
+    #     'datasets': [{
+    #         'label': 'BaBLO$$',
+    #         'data': totals,
+    #         # 'borderWidth': 1
+    #     }]}
+    # print(chart)
+    context['chart_labels'] = years
+    context['chart_data'] = totals
     return render(request, 'ldata/index.html', context=context)
 
 # На основе приложенных данных (test_LT.xlsx) сделать мини-сервис, предоставляющий возможность выводить график

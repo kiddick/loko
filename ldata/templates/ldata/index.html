@@ -88,7 +88,17 @@
         var ctx = document.getElementById("myChart");
         var myChart = new Chart(ctx, {
             type: 'bar',
-            data: {{ chart|jsonify }},
+            // data: {{ chart|jsonify }},
+            data: {
+                labels: {{ chart_labels|jsonify }},
+                datasets: [{
+                    label: 'Выручка',
+                    data: {{ chart_data|jsonify }},
+                    borderWidth: 2,
+                    backgroundColor: "#e8c3b9"
+                    // backgroundColor: "#FF6384"
+                }]
+            },
             options: {
                 scales: {
                     yAxes: [{
@@ -164,7 +174,7 @@
                         selectedIds = selectedIds.diff(group.children.map(function (item) { return item.id }))
                         selectedIds.push(group.id)
                         for (children of group.children) {
-                            if ('shadow' in children) {children.text = children.shadow}
+                            if ('shadow' in children) { children.text = children.shadow }
                             var i = selectedItems.length;
                             while (i--) {
                                 if (selectedItems[i].id == children.id) {
@@ -177,7 +187,7 @@
                     if (selectedIds.includes(group.id.toString())) {
                         selectedIds = selectedIds.diff(group.children.map(function (item) { return item.id }))
                         for (children of group.children) {
-                            if ('shadow' in children) {children.text = children.shadow}
+                            if ('shadow' in children) { children.text = children.shadow }
                             var i = selectedItems.length;
                             while (i--) {
                                 if (selectedItems[i].id == children.id) {
