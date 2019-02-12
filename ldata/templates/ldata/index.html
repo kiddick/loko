@@ -5,28 +5,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
-        crossorigin="anonymous"> -->
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/2.4.8/css/AdminLTE.css"> -->
-
     <link rel="stylesheet" href="https://adminlte.io/themes/AdminLTE/bower_components/bootstrap/dist/css/bootstrap.min.css">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://adminlte.io/themes/AdminLTE/bower_components/font-awesome/css/font-awesome.min.css">
-    <!-- Ionicons -->
     <link rel="stylesheet" href="https://adminlte.io/themes/AdminLTE/bower_components/Ionicons/css/ionicons.min.css">
-    <!-- Theme style -->
     <link rel="stylesheet" href="https://adminlte.io/themes/AdminLTE/dist/css/AdminLTE.min.css">
-    <!-- AdminLTE Skins. Choose a skin from the css/skins
-         folder instead of downloading all of them to reduce the load. -->
     <link rel="stylesheet" href="https://adminlte.io/themes/AdminLTE/dist/css/skins/_all-skins.min.css">
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.5/css/select2.min.css"> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/3.5.2/select2.min.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.js"></script>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
         crossorigin="anonymous"></script>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script> -->
     <title>Loko</title>
 </head>
 
@@ -35,9 +23,9 @@
         <div class="row">
             <div class="col-md-4">
                 <div id="main" class="box box-primary">
-                    <form action="/calc" method="GET">
+                    <form action="/calc" method="GET" id="get-lquery">
                         <div class="box-header">
-                            <h1>Локо аналитика</h1>
+                            <h2>Локо аналитика</h2>
                         </div>
 
                         <div class="form-group">
@@ -45,18 +33,18 @@
                             <input id="lquery" value="" style="width:300px;" name="lquery">
                         </div>
                         <div class="form-group">
-                            <label for="kmFrom">Начало:</label>
-                            <select name="kmfrom" class="form-control" id="kmfrom">
-                                {% for km in kms %}
-                                <option>{{km}}</option>
+                            <label for="yearfrom">Начало:</label>
+                            <select name="yearfrom" class="form-control" id="yearfrom">
+                                {% for year in years %}
+                                <option>{{year}}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="kmTo">Конец:</label>
-                            <select name="kmto" class="form-control" id="kmto">
-                                {% for km in kms %}
-                                <option>{{km}}</option>
+                            <label for="yearto">Конец:</label>
+                            <select name="yearto" class="form-control" id="yearto">
+                                {% for year in years %}
+                                <option>{{year}}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -70,12 +58,8 @@
             <div class="col-md-4">
                 <div id="lchart" class="box box-primary">
                     <div class="box-header">
-                        <h2>chart</h2>
+                        <h2>График</h2>
                     </div>
-                    <p>query: {{lquery}}</p>
-                    <p>from: {{kmfrom}}</p>
-                    <p>to: {{kmto}}</p>
-
                     <canvas id="myChart" width="400" height="400">
                     </canvas>
                 </div>
@@ -84,76 +68,96 @@
         </div>
     </section>
 
+    <style>
+        .btn {
+            margin: 2 auto;
+            padding: 6px 12px;
+            width: 25%;
+        }
+
+        #main {
+            padding: 10px 10px 10px 10px;
+        }
+
+        #submitbtn,
+        .box-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .box {
+            border-width: 5px;
+            box-shadow: 1px 3px 3px rgba(0, 0, 0, 0.1)
+        }
+    </style>
+
     <script>
-        var ctx = document.getElementById("myChart");
-        var myChart = new Chart(ctx, {
-            type: 'bar',
-            // data: {{ chart|jsonify }},
-            data: {
-                labels: {{ chart_labels|jsonify }},
-                datasets: [{
-                    label: 'Выручка',
-                    data: {{ chart_data|jsonify }},
-                    borderWidth: 2,
-                    backgroundColor: "#e8c3b9"
-                    // backgroundColor: "#FF6384"
-                }]
-            },
-            options: {
-                scales: {
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true
-                        }
+        var chart_data = {};
+        var chart;
+
+        function plot() {
+            var ctx = document.getElementById("myChart");
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chart_data['labels'],
+                    datasets: [{
+                        label: 'Выручка, млн. руб',
+                        data: chart_data['data'],
+                        borderWidth: 2,
+                        backgroundColor: "#e8c3b9"
                     }]
+                },
+                options: {
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
                 }
-            }
-        });
+            })
+        }
+
+        $('#get-lquery').on('submit', function (event) {
+            event.preventDefault();
+            lquery();
+        })
+        function lquery() {
+            $.ajax({
+                url: "calc/",
+                type: "GET",
+                data: {
+                    lquery: $('#lquery').val(),
+                    yearfrom: $('#yearfrom').val(),
+                    yearto: $('#yearto').val()
+                },
+
+                success: function (json) {
+                    chart_data = json;
+                    if (chart) { chart.destroy() }
+                    plot();
+                },
+
+                error: function (xhr, errmsg, err) {
+                    alert('Request error!')
+                }
+            });
+        };
     </script>
-    <!-- <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut"
         crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
         crossorigin="anonymous"></script>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/3.5.2/select2.js"></script>
-    <!-- <script>
-        $('.select2').select2()
-    </script> -->
     <script>
         Array.prototype.diff = function (a) {
             return this.filter(function (i) { return a.indexOf(i) < 0; });
         };
 
         var ldata = {{ loko_data| jsonify }};
-        // console.log(FRUIT_GROUPS)
-        // console.log(JSON.stringify(FRUIT_GROUPS))
-        // var ffs = [
-        //     {
-        //         id: '',
-        //         text: 'Citrus',
-        //         children: [
-        //             { id: 'c1', text: 'Grapefruit' },
-        //             { id: 'c2', text: 'Orange' },
-        //             { id: 'c3', text: 'Lemon' },
-        //             { id: 'c4', text: 'Lime' }
-        //         ]
-        //     },
-        //     {
-        //         id: '',
-        //         text: 'Other',
-        //         children: [
-        //             { id: 'o1', text: 'Apple' },
-        //             { id: 'o2', text: 'Mango' },
-        //             { id: 'o3', text: 'Banana' }
-        //         ]
-        //     }
-        // ];
-        // console.log(JSON.stringify(ffs))
-        // console.log(ffs)
-        // var FRUIT_GROUPS = ffs;
-        // selected ids -->
         $('#lquery').select2({
             multiple: true,
             placeholder: "Выберите..",
@@ -223,6 +227,5 @@
         });
     </script>
 </body>
-
 
 </html>

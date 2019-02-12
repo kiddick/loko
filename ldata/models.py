@@ -4,9 +4,7 @@ from functools import reduce
 
 from django.core.validators import MaxValueValidator
 from django.db import models
-from django.db.models import Q, FloatField
-from django.db.models import F
-from django.db.models import Sum
+from django.db.models import F, FloatField, Q, Sum, DecimalField
 
 
 class Train(models.Model):
@@ -26,28 +24,29 @@ class Branch(models.Model):
 
 
 class MileageQuerySet(models.QuerySet):
-    def get_stats(self, query, year_from, year_to):
-        branches = []
-        branches_trains = defaultdict(list)
-        for item in query.split(','):
-            if '_' in item:
-                b, t = item.split('_')
-                branches_trains[b].append(t)
-            else:
-                branches.append(item)
-        branches = [Q(branch=i) for i in branches]
-        branches_trains = [(Q(branch=b) & Q(train__in=t)) for b,t in branches_trains.items()]
+    def get_stats(self, lquery, year_from, year_to):
+        if lquery:
+            branches = []
+            branches_trains = defaultdict(list)
+            for item in lquery.split(','):
+                if '_' in item:
+                    b, t = item.split('_')
+                    branches_trains[b].append(t)
+                else:
+                    branches.append(item)
+            branches = [Q(branch=i) for i in branches]
+            branches_trains = [(Q(branch=b) & Q(train__in=t)) for b, t in branches_trains.items()]
         period = Q(year__range=[year_from, year_to])
-        # qquery = self.annotate(price=select_related('train'))
-        qquery = self.select_related('train')
-        qquery =  qquery.filter(reduce(operator.or_, (*branches, *branches_trains)) & period)
-        # qquery =  self.filter(reduce(operator.or_, (*branches, *branches_trains)) & period)
-        # qquery =  qquery.aggregate(total=Sum(F('km')*F('train__price'), output_field=FloatField()))
-        # for i in qquery.all():
-        #     print(i)
-        qquery = qquery.values('year').annotate(total=Sum(F('km')*F('train__price'), output_field=FloatField()))
-        print(qquery.query)
-        return qquery
+        query = self.select_related('train')
+        if lquery:
+            query = query.filter(reduce(operator.or_, (*branches, *branches_trains)) & period)
+        else:
+            query = query.filter(period)
+        query = query.values('year').annotate(
+            total=Sum(F('km') * F('train__price') / 1000000,
+                      output_field=DecimalField(decimal_places=2))
+        )
+        return query
 
 
 class Mileage(models.Model):
